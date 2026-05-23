@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>প্রশ্নোত্তর লাইভ পরীক্ষা</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: 'Hind Siliguri', sans-serif; background: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .header { background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.08); margin-bottom: 20px; text-align: center; }
+    .timer { font-size: 2rem; font-weight: 700; color: #3b82f6; }
+    .question-card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+    .options { display: grid; gap: 10px; margin-top: 15px; }
+    .option { display: flex; align-items: center; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 40px; cursor: pointer; transition: 0.2s; }
+    .option:hover { border-color: #3b82f6; background: #eff6ff; }
+    .option.selected { background: #3b82f6; color: white; border-color: #3b82f6; }
+    .option input { display: none; }
+    .btn { background: #3b82f6; color: white; padding: 14px 30px; border: none; border-radius: 40px; font-size: 1.1rem; font-weight: 600; cursor: pointer; display: block; width: 100%; margin-top: 20px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result { background: #fff; border-radius: 16px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+    .correct { color: #10b981; }
+    .wrong { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>প্রশ্নোত্তর লাইভ পরীক্ষা</h1>
+      <div class="timer" id="timerDisplay">60:00</div>
+      <p>মোট প্রশ্ন: ৭৫ | সময়: ৬০ মিনিট | +১ সঠিক / -০.২৫ ভুল</p>
+    </div>
+    <div id="questionsContainer"></div>
+    <button class="btn" id="submitBtn">পরীক্ষা শেষ করুন</button>
+    <div class="result" id="resultContainer" style="display:none;">
+      <h2>আপনার ফলাফল</h2>
+      <p>সঠিক: <span id="correctCount">0</span> | ভুল: <span id="wrongCount">0</span> | বাদ: <span id="skippedCount">0</span></p>
+      <p>মোট নম্বর: <strong id="finalScore">0.00</strong> / 75</p>
+      <div id="detailedResult"></div>
+      <button class="btn" onclick="location.reload()">আবার পরীক্ষা দিন</button>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ এখানে আপনার প্রকৃত Supabase তথ্য বসান
+    const SUPABASE_URL = 'https://gdqeryiyqypgnwdohtpz.supabase.co';      // ← আপনার Project URL
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkcWVyeWl5cXlwZ253ZG9odHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0OTczMTQsImV4cCI6MjA5NTA3MzMxNH0.w1RpfTaL6d0DgQzoOZSTRHsY0Zlyey-DFx8LtCgT6m0';                    // ← আপনার anon key
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let questions = [];
+    let answers = {};
+    let timer;
+    let timeLeft = 60 * 60;
+
+    async function loadQuestions() {
+      const { data, error } = await supabase.from('questions').select('*');
+      if (error) { alert('প্রশ্ন লোড করতে সমস্যা হয়েছে'); return; }
+      questions = data.sort(() => Math.random() - 0.5).slice(0, 75);
+      renderQuestions();
+      startTimer();
+    }
+
+    function renderQuestions() {
+      const container = document.getElementById('questionsContainer');
+      container.innerHTML = questions.map((q, idx) => `
+        <div class="question-card">
+          <h3>${idx+1}. ${q.title}</h3>
+          <div class="options">
+            ${JSON.parse(q.options).map((opt, i) => {
+              const letter = String.fromCharCode(65 + i);
+              return `
+                <label class="option" data-qid="${q.id}" data-value="${letter}" onclick="selectAnswer(${q.id}, '${letter}', this)">
+                  <span style="font-weight:700;margin-right:12px;">${letter})</span> ${opt}
+                </label>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.selectAnswer = function(qId, value, element) {
+      const siblings = document.querySelectorAll(`.option[data-qid="${qId}"]`);
+      siblings.forEach(s => s.classList.remove('selected'));
+      element.classList.add('selected');
+      answers[qId] = value;
+    };
+
+    function startTimer() {
+      timer = setInterval(() => {
+        if (timeLeft <= 0) { clearInterval(timer); submitExam(); return; }
+        timeLeft--;
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        document.getElementById('timerDisplay').textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+      }, 1000);
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', () => {
+      if (confirm('পরীক্ষা শেষ করতে চান?')) { clearInterval(timer); submitExam(); }
+    });
+
+    function submitExam() {
+      document.getElementById('submitBtn').disabled = true;
+      let correct = 0, wrong = 0, skipped = 0;
+      let resultHtml = '';
+      questions.forEach((q, idx) => {
+        const userAns = answers[q.id];
+        const isCorrect = (userAns === q.correct_answer);
+        if (userAns === undefined) skipped++;
+        else if (isCorrect) correct++;
+        else wrong++;
+
+        const correctOpt = JSON.parse(q.options)[q.correct_answer.charCodeAt(0) - 65];
+        resultHtml += `
+          <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <strong>${idx+1}. ${q.title}</strong><br>
+            আপনার উত্তর: <span class="${isCorrect ? 'correct' : 'wrong'}">${userAns || 'দেওয়া হয়নি'}</span>
+            ${!isCorrect ? ` | সঠিক: <span class="correct">${q.correct_answer}. ${correctOpt}</span>` : ''}
+            ${q.explanation ? `<br><small>${q.explanation}</small>` : ''}
+          </div>
+        `;
+      });
+
+      const score = correct - (wrong * 0.25);
+      document.getElementById('correctCount').textContent = correct;
+      document.getElementById('wrongCount').textContent = wrong;
+      document.getElementById('skippedCount').textContent = skipped;
+      document.getElementById('finalScore').textContent = score.toFixed(2);
+      document.getElementById('detailedResult').innerHTML = resultHtml;
+      document.getElementById('questionsContainer').style.display = 'none';
+      document.getElementById('submitBtn').style.display = 'none';
+      document.getElementById('resultContainer').style.display = 'block';
+    }
+
+    loadQuestions();
+  </script>
+</body>
+</html>
