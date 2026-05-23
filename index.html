@@ -54,7 +54,7 @@
     let timeLeft = 60 * 60;
 
     async function loadQuestions() {
-      const { data, error } = await supabase.from('questions').select('*');
+      const { data, error } = await supabaseClient.from('questions').select('*');
       if (error) { alert('প্রশ্ন লোড করতে সমস্যা হয়েছে'); return; }
       questions = data.sort(() => Math.random() - 0.5).slice(0, 75);
       renderQuestions();
