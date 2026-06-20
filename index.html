@@ -138,7 +138,7 @@
 
     /* ── PDF review blocks (hidden on screen, shown in print) ── */
     #pdfReviewContainer {
-      display: none;                    /* hidden on screen */
+      display: none;
       background: white;
       padding: 20px;
       color: black;
@@ -193,7 +193,7 @@
       print-color-adjust: exact;
     }
 
-    /* Print styles – FIXED */
+    /* Print styles */
     @media print {
       body { background: white; color: black; font-size: 12pt; padding: 0; }
       .header, .question-panel, .nav-buttons, .question-grid, .btn,
@@ -201,7 +201,7 @@
         display: none !important;
       }
       #pdfReviewContainer {
-        display: block !important;      /* Now it can be displayed because its parent isn't hidden! */
+        display: block !important;
         column-count: 2;
         column-gap: 20px;
         text-align: left;
@@ -444,11 +444,13 @@
           const letter = String.fromCharCode(65 + oidx);
           let cls = '';
           
-          // FIXED: Correct answers now show even if the student skipped the question
-          if (letter === d.correctAnswer) {
-            cls = 'correct-opt';
-          } else if (letter === d.userAnswer && d.status === 'wrong') {
-            cls = 'wrong-opt';
+          // CRITICAL FIX: Only apply background colors if the user DID NOT skip the question
+          if (d.status !== 'skipped') {
+            if (letter === d.correctAnswer) {
+              cls = 'correct-opt';
+            } else if (letter === d.userAnswer && d.status === 'wrong') {
+              cls = 'wrong-opt';
+            }
           }
           
           cardsHtml += `<div class="opt ${cls}">${letter}) ${opt.replace(/</g, '&lt;')}</div>`;
@@ -461,7 +463,6 @@
       document.getElementById('pdfWrong').textContent = wrong;
       document.getElementById('pdfSkipped').textContent = skipped;
 
-      // Hide exam, show result
       document.getElementById('examContent').style.display = 'none';
       document.getElementById('examHeader').style.display = 'none';
       document.getElementById('resultScreen').style.display = 'block';
