@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>প্রশ্নোত্তর লাইভ পরীক্ষা1</title>
+  <title>প্রশ্নোত্তর লাইভ পরীক্ষা</title>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -22,12 +22,13 @@
     .result { background: #fff; border-radius: 16px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
     .correct { color: #10b981; }
     .wrong { color: #ef4444; }
+    #detailedResult { display: none; }   /* per‑question details completely hidden */
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>প্রশ্নোত্তর লাইভ পরীক্ষা 1</h1>
+      <h1>প্রশ্নোত্তর লাইভ পরীক্ষা</h1>
       <div class="timer" id="timerDisplay">60:00</div>
       <p>মোট প্রশ্ন: ৭৫ | সময়: ৬০ মিনিট | +১ সঠিক / -০.২৫ ভুল</p>
     </div>
@@ -37,21 +38,19 @@
       <h2>আপনার ফলাফল</h2>
       <p>সঠিক: <span id="correctCount">0</span> | ভুল: <span id="wrongCount">0</span> | বাদ: <span id="skippedCount">0</span></p>
       <p>মোট নম্বর: <strong id="finalScore">0.00</strong> / 75</p>
-      <div id="detailedResult"></div>
       <button class="btn" onclick="location.reload()">আবার পরীক্ষা দিন</button>
     </div>
   </div>
 
   <script>
-    // ⚠️ এখানে আপনার প্রকৃত Supabase তথ্য বসান
-    const SUPABASE_URL = 'https://gdqeryiyqypgnwdohtpz.supabase.co';      // ← আপনার Project URL
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkcWVyeWl5cXlwZ253ZG9odHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0OTczMTQsImV4cCI6MjA5NTA3MzMxNH0.w1RpfTaL6d0DgQzoOZSTRHsY0Zlyey-DFx8LtCgT6m0';                    // ← আপনার anon key
-
+    const SUPABASE_URL = 'https://gdqeryiyqypgnwdohtpz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkcWVyeWl5cXlwZ253ZG9odHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0OTczMTQsImV4cCI6MjA5NTA3MzMxNH0.w1RpfTaL6d0DgQzoOZSTRHsY0Zlyey-DFx8LtCgT6m0';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     let questions = [];
     let answers = {};
     let timer;
-    let timeLeft = 60 * 60;
+    let timeLeft = 60 * 60; // 60 minutes
 
     async function loadQuestions() {
       const { data, error } = await supabaseClient.from('questions').select('*');
@@ -104,23 +103,14 @@
     function submitExam() {
       document.getElementById('submitBtn').disabled = true;
       let correct = 0, wrong = 0, skipped = 0;
-      let resultHtml = '';
+      // no detailed result HTML is built
+
       questions.forEach((q, idx) => {
         const userAns = answers[q.id];
         const isCorrect = (userAns === q.correct_answer);
         if (userAns === undefined) skipped++;
         else if (isCorrect) correct++;
         else wrong++;
-
-        const correctOpt = JSON.parse(q.options)[q.correct_answer.charCodeAt(0) - 65];
-        resultHtml += `
-          <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <strong>${idx+1}. ${q.title}</strong><br>
-            আপনার উত্তর: <span class="${isCorrect ? 'correct' : 'wrong'}">${userAns || 'দেওয়া হয়নি'}</span>
-            ${!isCorrect ? ` | সঠিক: <span class="correct">${q.correct_answer}. ${correctOpt}</span>` : ''}
-            ${q.explanation ? `<br><small>${q.explanation}</small>` : ''}
-          </div>
-        `;
       });
 
       const score = correct - (wrong * 0.25);
@@ -128,9 +118,11 @@
       document.getElementById('wrongCount').textContent = wrong;
       document.getElementById('skippedCount').textContent = skipped;
       document.getElementById('finalScore').textContent = score.toFixed(2);
-      document.getElementById('detailedResult').innerHTML = resultHtml;
+
+      // Hide questions, submit button, and header
       document.getElementById('questionsContainer').style.display = 'none';
       document.getElementById('submitBtn').style.display = 'none';
+      document.querySelector('.header').style.display = 'none';
       document.getElementById('resultContainer').style.display = 'block';
     }
 
