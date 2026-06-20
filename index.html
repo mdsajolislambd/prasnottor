@@ -162,7 +162,7 @@
       transform: translate(-50%, -50%);
       font-size: 18px;
       font-weight: bold;
-      color: rgba(0, 0, 0, 0.2);
+      color: rgba(0, 0, 0, 0.1);
       pointer-events: none;
       white-space: nowrap;
       z-index: 0;
@@ -181,23 +181,27 @@
       border-radius: 3px;
     }
     .review-card .opt.correct-opt {
-      background: #d4edda;
-      color: #155724;
+      background: #d4edda !important;
+      color: #155724 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .review-card .opt.wrong-opt {
-      background: #f8d7da;
-      color: #721c24;
+      background: #f8d7da !important;
+      color: #721c24 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
 
     /* Print styles – FIXED */
     @media print {
-      body { background: white; color: black; font-size: 12pt; }
+      body { background: white; color: black; font-size: 12pt; padding: 0; }
       .header, .question-panel, .nav-buttons, .question-grid, .btn,
       #examContent, #examHeader, .result-screen {
         display: none !important;
       }
       #pdfReviewContainer {
-        display: block !important;      /* shown only when printing */
+        display: block !important;      /* Now it can be displayed because its parent isn't hidden! */
         column-count: 2;
         column-gap: 20px;
         text-align: left;
@@ -206,9 +210,9 @@
       .no-print { display: none !important; }
       @page {
         margin-top: 0.5in;
-        margin-right: 0;
-        margin-bottom: 0;
-        margin-left: 0;
+        margin-right: 0.5in;
+        margin-bottom: 0.5in;
+        margin-left: 0.5in;
       }
     }
 
@@ -267,14 +271,14 @@
       <p>মোট নম্বর: <strong id="finalScore">0.00</strong> / 75</p>
       <button class="btn btn-primary" onclick="location.reload()">আবার পরীক্ষা দিন</button>
       <button class="btn btn-primary" onclick="window.print()" style="background:#2563eb; margin-top:10px;">📥 পিডিএফ ডাউনলোড</button>
+    </div>
 
-      <div id="pdfReviewContainer">
-        <h3 style="text-align:left; margin-bottom:10px;">Exam Report</h3>
-        <p style="text-align:left; margin-bottom:15px;">
-          Score: <strong id="pdfScore"></strong> | Correct: <strong id="pdfCorrect"></strong> | Wrong: <strong id="pdfWrong"></strong> | Skipped: <strong id="pdfSkipped"></strong>
-        </p>
-        <div id="pdfCards"></div>
-      </div>
+    <div id="pdfReviewContainer">
+      <h3 style="text-align:left; margin-bottom:10px;">Exam Report</h3>
+      <p style="text-align:left; margin-bottom:15px;">
+        Score: <strong id="pdfScore"></strong> | Correct: <strong id="pdfCorrect"></strong> | Wrong: <strong id="pdfWrong"></strong> | Skipped: <strong id="pdfSkipped"></strong>
+      </p>
+      <div id="pdfCards"></div>
     </div>
   </div>
 
@@ -439,10 +443,14 @@
         d.options.forEach((opt, oidx) => {
           const letter = String.fromCharCode(65 + oidx);
           let cls = '';
-          if (d.status !== 'skipped') {
-            if (letter === d.correctAnswer) cls = 'correct-opt';
-            else if (letter === d.userAnswer && d.status === 'wrong') cls = 'wrong-opt';
+          
+          // FIXED: Correct answers now show even if the student skipped the question
+          if (letter === d.correctAnswer) {
+            cls = 'correct-opt';
+          } else if (letter === d.userAnswer && d.status === 'wrong') {
+            cls = 'wrong-opt';
           }
+          
           cardsHtml += `<div class="opt ${cls}">${letter}) ${opt.replace(/</g, '&lt;')}</div>`;
         });
         cardsHtml += `</div>`;
