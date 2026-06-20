@@ -136,6 +136,80 @@
       margin-top: 20px;
     }
 
+    /* ── PDF review blocks (hidden on screen, shown in print) ── */
+    #pdfReviewContainer {
+      display: none;
+      background: white;
+      padding: 20px;
+      color: black;
+      text-align: left;
+    }
+    .review-card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #ddd;
+      padding: 8px;
+      margin: 5px 0;
+      break-inside: avoid;
+      font-size: 11px;
+      text-align: left;
+    }
+    .review-card::before {
+      content: "prosnottor.vercel.app";
+      position: absolute;
+      top: 50%;
+      left: 60%;
+      transform: translate(-50%, -50%);
+      font-size: 18px;
+      font-weight: bold;
+      color: rgba(0, 0, 0, 0.2);
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 0;
+    }
+    .review-card > * {
+      position: relative;
+      z-index: 1;
+    }
+    .review-card .q-title {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .review-card .opt {
+      margin: 2px 0;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+    .review-card .opt.correct-opt {
+      background: #d4edda;
+      color: #155724;
+    }
+    .review-card .opt.wrong-opt {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    /* Print styles */
+    @media print {
+      body { background: white; color: black; font-size: 12pt; }
+      .header, .question-panel, .nav-buttons, .question-grid, .btn, .result-screen,
+      #examContent, #examHeader { display: none !important; }
+      #pdfReviewContainer {
+        display: block !important;
+        column-count: 2;
+        column-gap: 20px;
+        text-align: left;
+        padding-top: 0.5in;
+      }
+      .no-print { display: none !important; }
+      @page {
+        margin-top: 0.5in;
+        margin-right: 0;
+        margin-bottom: 0;
+        margin-left: 0;
+      }
+    }
+
     @media (max-width: 600px) {
       .question-grid { grid-template-columns: repeat(5, 1fr); }
     }
@@ -143,6 +217,7 @@
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <div class="header" id="examHeader">
       <h1 class="exam-title">প্রশ্নোত্তর লাইভ পরীক্ষা</h1>
       <div class="timer-box" id="timerDisplay">
@@ -150,15 +225,14 @@
       </div>
     </div>
 
+    <!-- Exam Content -->
     <div id="examContent">
-      <!-- Start screen -->
       <div class="question-panel" id="startScreen" style="text-align:center; display:none;">
         <h2>পরীক্ষার জন্য প্রস্তুত?</h2>
         <p>মোট প্রশ্ন: ৭৫ | সময়: ৬০ মিনিট | +১ সঠিক / -০.২৫ ভুল</p>
         <button class="btn btn-primary" id="startBtn">পরীক্ষা শুরু করুন</button>
       </div>
 
-      <!-- Question panel -->
       <div id="questionPanel" style="display:none;">
         <div class="question-panel">
           <div class="question-header">
@@ -187,12 +261,22 @@
       </div>
     </div>
 
-    <!-- Result screen (hidden) -->
+    <!-- Result Screen -->
     <div class="result-screen" id="resultScreen" style="display:none;">
       <h2>আপনার ফলাফল</h2>
       <p>সঠিক: <span id="correctCount">0</span> | ভুল: <span id="wrongCount">0</span> | বাদ: <span id="skippedCount">0</span></p>
       <p>মোট নম্বর: <strong id="finalScore">0.00</strong> / 75</p>
       <button class="btn btn-primary" onclick="location.reload()">আবার পরীক্ষা দিন</button>
+      <button class="btn btn-primary" onclick="window.print()" style="background:#2563eb; margin-top:10px;">📥 পিডিএফ ডাউনলোড</button>
+
+      <!-- Hidden PDF content -->
+      <div id="pdfReviewContainer">
+        <h3 style="text-align:left; margin-bottom:10px;">Exam Report</h3>
+        <p style="text-align:left; margin-bottom:15px;">
+          Score: <strong id="pdfScore"></strong> | Correct: <strong id="pdfCorrect"></strong> | Wrong: <strong id="pdfWrong"></strong> | Skipped: <strong id="pdfSkipped"></strong>
+        </p>
+        <div id="pdfCards"></div>
+      </div>
     </div>
   </div>
 
@@ -208,26 +292,22 @@
     let timeLeft = 60 * 60;
     let examActive = false;
 
-    // ----- Load questions from Supabase -----
     async function loadQuestions() {
       try {
         document.getElementById('startScreen').style.display = 'none';
         const { data, error } = await supabaseClient.from('questions').select('*');
         if (error) throw new Error(error.message);
-        // Randomly select 75
         examQuestions = data.sort(() => Math.random() - 0.5).slice(0, 75);
         if (examQuestions.length === 0) {
           alert('কোনো প্রশ্ন পাওয়া যায়নি।');
           return;
         }
-        // Show start button
         document.getElementById('startScreen').style.display = 'block';
       } catch (err) {
         alert('প্রশ্ন লোড করতে সমস্যা: ' + err.message);
       }
     }
 
-    // ----- Start exam -----
     function startExam() {
       document.getElementById('startScreen').style.display = 'none';
       document.getElementById('questionPanel').style.display = 'block';
@@ -241,7 +321,6 @@
       startTimer();
     }
 
-    // ----- Timer -----
     function startTimer() {
       clearInterval(timerInterval);
       timerInterval = setInterval(() => {
@@ -267,12 +346,11 @@
       document.getElementById('timer').textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
     }
 
-    // ----- Render current question -----
     function renderQuestion() {
       if (!examQuestions.length) return;
       const q = examQuestions[currentIndex];
       document.getElementById('qNumIndicator').textContent = `প্রশ্ন ${currentIndex + 1} / ${examQuestions.length}`;
-      document.getElementById('questionText').textContent = q.title; // post title as question
+      document.getElementById('questionText').textContent = q.title;
 
       const options = JSON.parse(q.options);
       let html = '';
@@ -298,7 +376,6 @@
       updateAnsweredCount();
     };
 
-    // ----- Question palette -----
     function renderQuestionGrid() {
       const grid = document.getElementById('questionGrid');
       let html = '';
@@ -321,33 +398,33 @@
       document.getElementById('answeredCount').textContent = count;
     }
 
-    // ----- Navigation -----
     document.getElementById('prevBtn').addEventListener('click', () => {
-      if (currentIndex > 0) {
-        currentIndex--;
-        renderQuestion();
-        renderQuestionGrid();
-      }
+      if (currentIndex > 0) { currentIndex--; renderQuestion(); renderQuestionGrid(); }
     });
     document.getElementById('nextBtn').addEventListener('click', () => {
-      if (currentIndex < examQuestions.length - 1) {
-        currentIndex++;
-        renderQuestion();
-        renderQuestionGrid();
-      }
+      if (currentIndex < examQuestions.length - 1) { currentIndex++; renderQuestion(); renderQuestionGrid(); }
     });
 
-    // ----- Submit exam -----
     function submitExam(automatic = false) {
       examActive = false;
       clearInterval(timerInterval);
 
       let correct = 0, wrong = 0, skipped = 0;
+      const details = [];
       examQuestions.forEach((q, idx) => {
         const userAns = userAnswers[idx];
-        if (userAns === undefined) skipped++;
-        else if (userAns === q.correct_answer) correct++;
-        else wrong++;
+        let status = '';
+        if (userAns === undefined) { skipped++; status = 'skipped'; }
+        else if (userAns === q.correct_answer) { correct++; status = 'correct'; }
+        else { wrong++; status = 'wrong'; }
+
+        details.push({
+          question: q.title,
+          options: JSON.parse(q.options),
+          userAnswer: userAns || '',
+          correctAnswer: q.correct_answer,
+          status: status
+        });
       });
 
       const score = correct * 1 - wrong * 0.25;
@@ -356,7 +433,29 @@
       document.getElementById('skippedCount').textContent = skipped;
       document.getElementById('finalScore').textContent = score.toFixed(2);
 
-      // Hide exam UI, show result
+      // Build PDF cards
+      let cardsHtml = '';
+      details.forEach((d, i) => {
+        cardsHtml += `<div class="review-card">
+          <div class="q-title">${i+1}. ${d.question.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
+        d.options.forEach((opt, oidx) => {
+          const letter = String.fromCharCode(65 + oidx);
+          let cls = '';
+          if (d.status !== 'skipped') {
+            if (letter === d.correctAnswer) cls = 'correct-opt';
+            else if (letter === d.userAnswer && d.status === 'wrong') cls = 'wrong-opt';
+          }
+          cardsHtml += `<div class="opt ${cls}">${letter}) ${opt.replace(/</g, '&lt;')}</div>`;
+        });
+        cardsHtml += `</div>`;
+      });
+      document.getElementById('pdfCards').innerHTML = cardsHtml;
+      document.getElementById('pdfScore').textContent = `${score.toFixed(2)}/75`;
+      document.getElementById('pdfCorrect').textContent = correct;
+      document.getElementById('pdfWrong').textContent = wrong;
+      document.getElementById('pdfSkipped').textContent = skipped;
+
+      // Hide exam, show result
       document.getElementById('examContent').style.display = 'none';
       document.getElementById('examHeader').style.display = 'none';
       document.getElementById('resultScreen').style.display = 'block';
@@ -364,15 +463,11 @@
       if (automatic) alert('সময় শেষ! পরীক্ষা স্বয়ংক্রিয়ভাবে জমা দেওয়া হয়েছে।');
     }
 
-    // ----- Event listeners -----
     document.getElementById('startBtn').addEventListener('click', startExam);
     document.getElementById('submitBtn').addEventListener('click', () => {
-      if (confirm('আপনি কি নিশ্চিত যে পরীক্ষা শেষ করতে চান?')) {
-        submitExam();
-      }
+      if (confirm('আপনি কি নিশ্চিত যে পরীক্ষা শেষ করতে চান?')) submitExam();
     });
 
-    // Warn before leaving during exam
     window.addEventListener('beforeunload', (e) => {
       if (examActive) {
         e.preventDefault();
@@ -380,7 +475,6 @@
       }
     });
 
-    // Start loading questions immediately
     loadQuestions();
   </script>
 </body>
