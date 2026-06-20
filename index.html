@@ -43,15 +43,14 @@
   </div>
 
   <script>
-    // ⚠️ এখানে আপনার প্রকৃত Supabase তথ্য বসান
-    const SUPABASE_URL = 'https://gdqeryiyqypgnwdohtpz.supabase.co';      // ← আপনার Project URL
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkcWVyeWl5cXlwZ253ZG9odHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0OTczMTQsImV4cCI6MjA5NTA3MzMxNH0.w1RpfTaL6d0DgQzoOZSTRHsY0Zlyey-DFx8LtCgT6m0';                    // ← আপনার anon key
-
+    const SUPABASE_URL = 'https://gdqeryiyqypgnwdohtpz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkcWVyeWl5cXlwZ253ZG9odHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0OTczMTQsImV4cCI6MjA5NTA3MzMxNH0.w1RpfTaL6d0DgQzoOZSTRHsY0Zlyey-DFx8LtCgT6m0';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     let questions = [];
     let answers = {};
     let timer;
-    let timeLeft = 60 * 60;
+    let timeLeft = 60 * 60; // 60 minutes
 
     async function loadQuestions() {
       const { data, error } = await supabaseClient.from('questions').select('*');
@@ -129,8 +128,11 @@
       document.getElementById('skippedCount').textContent = skipped;
       document.getElementById('finalScore').textContent = score.toFixed(2);
       document.getElementById('detailedResult').innerHTML = resultHtml;
+
+      // Hide questions, submit button, and the header (timer/title/info)
       document.getElementById('questionsContainer').style.display = 'none';
       document.getElementById('submitBtn').style.display = 'none';
+      document.querySelector('.header').style.display = 'none';
       document.getElementById('resultContainer').style.display = 'block';
     }
 
