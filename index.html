@@ -138,7 +138,7 @@
 
     /* ── PDF review blocks (hidden on screen, shown in print) ── */
     #pdfReviewContainer {
-      display: none;
+      display: none;                    /* hidden on screen */
       background: white;
       padding: 20px;
       color: black;
@@ -189,13 +189,15 @@
       color: #721c24;
     }
 
-    /* Print styles */
+    /* Print styles – FIXED */
     @media print {
       body { background: white; color: black; font-size: 12pt; }
-      .header, .question-panel, .nav-buttons, .question-grid, .btn, .result-screen,
-      #examContent, #examHeader { display: none !important; }
+      .header, .question-panel, .nav-buttons, .question-grid, .btn,
+      #examContent, #examHeader, .result-screen {
+        display: none !important;
+      }
       #pdfReviewContainer {
-        display: block !important;
+        display: block !important;      /* shown only when printing */
         column-count: 2;
         column-gap: 20px;
         text-align: left;
@@ -217,7 +219,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- Header -->
     <div class="header" id="examHeader">
       <h1 class="exam-title">প্রশ্নোত্তর লাইভ পরীক্ষা</h1>
       <div class="timer-box" id="timerDisplay">
@@ -225,7 +226,6 @@
       </div>
     </div>
 
-    <!-- Exam Content -->
     <div id="examContent">
       <div class="question-panel" id="startScreen" style="text-align:center; display:none;">
         <h2>পরীক্ষার জন্য প্রস্তুত?</h2>
@@ -261,7 +261,6 @@
       </div>
     </div>
 
-    <!-- Result Screen -->
     <div class="result-screen" id="resultScreen" style="display:none;">
       <h2>আপনার ফলাফল</h2>
       <p>সঠিক: <span id="correctCount">0</span> | ভুল: <span id="wrongCount">0</span> | বাদ: <span id="skippedCount">0</span></p>
@@ -269,7 +268,6 @@
       <button class="btn btn-primary" onclick="location.reload()">আবার পরীক্ষা দিন</button>
       <button class="btn btn-primary" onclick="window.print()" style="background:#2563eb; margin-top:10px;">📥 পিডিএফ ডাউনলোড</button>
 
-      <!-- Hidden PDF content -->
       <div id="pdfReviewContainer">
         <h3 style="text-align:left; margin-bottom:10px;">Exam Report</h3>
         <p style="text-align:left; margin-bottom:15px;">
