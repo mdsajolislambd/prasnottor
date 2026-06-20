@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>প্রশ্নোত্তর লাইভ পরীক্ষা 1</title>
+  <title>প্রশ্নোত্তর লাইভ পরীক্ষা</title>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -43,14 +43,15 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://gdqeryiyqypgnwdohtpz.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkcWVyeWl5cXlwZ253ZG9odHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0OTczMTQsImV4cCI6MjA5NTA3MzMxNH0.w1RpfTaL6d0DgQzoOZSTRHsY0Zlyey-DFx8LtCgT6m0';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ⚠️ এখানে আপনার প্রকৃত Supabase তথ্য বসান
+    const SUPABASE_URL = 'https://gdqeryiyqypgnwdohtpz.supabase.co';      // ← আপনার Project URL
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkcWVyeWl5cXlwZ253ZG9odHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0OTczMTQsImV4cCI6MjA5NTA3MzMxNH0.w1RpfTaL6d0DgQzoOZSTRHsY0Zlyey-DFx8LtCgT6m0';                    // ← আপনার anon key
 
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let questions = [];
     let answers = {};
     let timer;
-    let timeLeft = 60 * 60; // 60 minutes
+    let timeLeft = 60 * 60;
 
     async function loadQuestions() {
       const { data, error } = await supabaseClient.from('questions').select('*');
@@ -128,11 +129,8 @@
       document.getElementById('skippedCount').textContent = skipped;
       document.getElementById('finalScore').textContent = score.toFixed(2);
       document.getElementById('detailedResult').innerHTML = resultHtml;
-
-      // Hide questions, submit button, and the header (timer/title/info)
       document.getElementById('questionsContainer').style.display = 'none';
       document.getElementById('submitBtn').style.display = 'none';
-      document.querySelector('.header').style.display = 'none';
       document.getElementById('resultContainer').style.display = 'block';
     }
 
